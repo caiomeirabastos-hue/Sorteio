@@ -220,7 +220,7 @@ Comunidade Santo Antônio
 
     elif senha:
         st.error("Senha incorreta.")
-            )
+            
 
     elif senha:
         st.error("Senha incorreta.")
