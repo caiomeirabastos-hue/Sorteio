@@ -7,7 +7,7 @@ import os
 # CONFIGURAÇÕES
 # ==========================================
 
-ARQUIVO = "comunidades.json"
+ARQUIVO = "https://www.facebook.com/ShalomNatal/"
 SENHA_ADMIN = "123456"
 
 st.set_page_config(
