@@ -1,108 +1,225 @@
 import streamlit as st
 import random
+import json
+import os
 
-# Senha do administrador
+# ==========================================
+# CONFIGURAÇÕES
+# ==========================================
+
+ARQUIVO = "comunidades.json"
 SENHA_ADMIN = "123456"
 
-# Lista inicial de participantes
-if "participantes" not in st.session_state:
-    st.session_state.participantes = []
-
-if "sorteados" not in st.session_state:
-    st.session_state.sorteados = []
-
 st.set_page_config(
-    page_title="Sorteio de Nomes",
-    page_icon="🎲",
+    page_title="Sorteio de Comunidades",
+    page_icon="🙏",
     layout="centered"
 )
 
-st.title("🎲 Sorteio de Participantes")
+# ==========================================
+# FUNÇÕES
+# ==========================================
 
-aba1, aba2 = st.tabs(["🎁 Sorteio", "⚙️ Administração"])
+def carregar_comunidades():
+    if os.path.exists(ARQUIVO):
+        with open(ARQUIVO, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
-# =====================================================
-# ÁREA DE SORTEIO
-# =====================================================
+
+def salvar_comunidades(lista):
+    with open(ARQUIVO, "w", encoding="utf-8") as f:
+        json.dump(lista, f, ensure_ascii=False, indent=4)
+
+
+# Inicialização
+if "historico" not in st.session_state:
+    st.session_state.historico = []
+
+# Carrega comunidades
+comunidades = carregar_comunidades()
+
+# ==========================================
+# TÍTULO
+# ==========================================
+
+st.title("🙏 Sorteio de Comunidades")
+st.caption("Clique no botão e receba uma comunidade para sua oração.")
+
+aba1, aba2 = st.tabs(
+    ["🎁 Sorteio", "⚙️ Administração"]
+)
+
+# ==========================================
+# ABA SORTEIO
+# ==========================================
+
 with aba1:
 
-    st.subheader("Sorteio")
+    st.markdown("### Faça seu sorteio")
 
-    restantes = [
-        nome for nome in st.session_state.participantes
-        if nome not in st.session_state.sorteados
-    ]
+    st.metric(
+        "Comunidades cadastradas",
+        len(comunidades)
+    )
 
-    st.metric("Participantes restantes", len(restantes))
+    st.write("")
 
-    if st.button("🎲 Sortear Nome", use_container_width=True):
+    if st.button(
+        "🙏 Sortear Comunidade",
+        use_container_width=True
+    ):
 
-        if not restantes:
-            st.error("Não existem mais participantes disponíveis.")
+        if not comunidades:
+
+            st.error(
+                "Nenhuma comunidade cadastrada."
+            )
+
         else:
-            vencedor = random.choice(restantes)
-            st.session_state.sorteados.append(vencedor)
 
-            st.success("Nome sorteado:")
+            sorteada = random.choice(
+                comunidades
+            )
+
+            st.balloons()
+
+            st.success(
+                "Comunidade Sorteada"
+            )
+
             st.markdown(
-                f"<h1 style='text-align:center;color:green'>{vencedor}</h1>",
+                f"""
+                <div style="
+                    background-color:#f2f2f2;
+                    padding:30px;
+                    border-radius:15px;
+                    text-align:center;
+                    border:2px solid #4CAF50;
+                ">
+                    <h1 style="
+                        color:#2E8B57;
+                        margin:0;
+                    ">
+                        {sorteada}
+                    </h1>
+                </div>
+                """,
                 unsafe_allow_html=True
             )
 
-# =====================================================
-# ADMIN
-# =====================================================
+            st.session_state.historico.append(
+                sorteada
+            )
+
+# ==========================================
+# ABA ADMIN
+# ==========================================
+
 with aba2:
 
-    st.subheader("Administração")
+    st.subheader("Área Administrativa")
 
     senha = st.text_input(
-        "Senha",
+        "Senha do administrador",
         type="password"
     )
 
     if senha == SENHA_ADMIN:
 
-        st.success("Acesso liberado")
+        st.success("Acesso autorizado")
+
+        st.divider()
 
         nomes = st.text_area(
-            "Digite um nome por linha",
-            height=200
+            "Digite uma comunidade por linha",
+            height=200,
+            placeholder="""
+Comunidade São José
+Comunidade Santa Luzia
+Comunidade Santo Antônio
+"""
         )
 
-        if st.button("Salvar Participantes"):
+        if st.button(
+            "💾 Salvar Comunidades",
+            use_container_width=True
+        ):
 
             lista = [
-                x.strip()
-                for x in nomes.split("\n")
-                if x.strip()
+                nome.strip()
+                for nome in nomes.split("\n")
+                if nome.strip()
             ]
 
-            st.session_state.participantes = lista
-            st.session_state.sorteados = []
+            salvar_comunidades(lista)
 
             st.success(
-                f"{len(lista)} participantes cadastrados."
+                f"{len(lista)} comunidades salvas com sucesso."
+            )
+
+            st.rerun()
+
+        st.divider()
+
+        st.subheader("📋 Comunidades Cadastradas")
+
+        if comunidades:
+
+            for i, comunidade in enumerate(comunidades):
+
+                col1, col2 = st.columns([8, 2])
+
+                with col1:
+                    st.write(comunidade)
+
+                with col2:
+
+                    if st.button(
+                        "🗑️",
+                        key=f"del_{i}"
+                    ):
+
+                        comunidades.remove(comunidade)
+                        salvar_comunidades(comunidades)
+                        st.rerun()
+
+        else:
+            st.info(
+                "Nenhuma comunidade cadastrada."
             )
 
         st.divider()
 
-        st.write("### Participantes")
+        st.subheader("📊 Estatísticas")
 
-        st.write(st.session_state.participantes)
+        st.metric(
+            "Total de Comunidades",
+            len(comunidades)
+        )
+
+        st.metric(
+            "Total de Sorteios",
+            len(st.session_state.historico)
+        )
 
         st.divider()
 
-        st.write("### Já sorteados")
+        if st.button(
+            "🧹 Limpar Todas as Comunidades",
+            use_container_width=True
+        ):
 
-        st.write(st.session_state.sorteados)
-
-        if st.button("🔄 Reiniciar Sorteio"):
-
-            st.session_state.sorteados = []
+            salvar_comunidades([])
 
             st.success(
-                "Sorteio reiniciado."
+                "Todas as comunidades foram removidas."
+            )
+
+            st.rerun()
+
+    elif senha:
+        st.error("Senha incorreta.")
             )
 
     elif senha:
